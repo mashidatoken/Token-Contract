@@ -457,7 +457,7 @@ contract Mashida is
   }
   function decreaseAllowance(address spender, uint256 subtractedValue) public virtual returns (bool) {
     uint256 currentAllowance = _allowances[_msgSender()][spender];
-    require(currentAllowance >= subtractedValue, "MSI: decreased allowance below zero");
+    require(currentAllowance >= subtractedValue, "MSHD: decreased allowance below zero");
     unchecked {
       _approve(_msgSender(), spender, currentAllowance - subtractedValue);
     }
@@ -471,10 +471,10 @@ contract Mashida is
     
     
   ) internal virtual returns(bool) {
-    require(sender != address(0), "MSI: transfer from the zero address");
-    require(recipient != address(0), "MSI: transfer to the zero address");
+    require(sender != address(0), "MSHD: transfer from the zero address");
+    require(recipient != address(0), "MSHD: transfer to the zero address");
     uint256 senderBalance = _balances[sender];
-    require(senderBalance >= amount, "MSI: transfer amount exceeds balance");
+    require(senderBalance >= amount, "MSHD: transfer amount exceeds balance");
 
     if (!_excludedTransferFee[sender]){
          unchecked {
@@ -591,7 +591,7 @@ contract Mashida is
 
 
   function _mint(address account, uint256 amount) internal virtual {
-    require(account != address(0), "MSI: mint to the zero address");
+    require(account != address(0), "MSHD: mint to the zero address");
 
     _totalSupply += amount;
     _balances[account] += amount;
@@ -604,8 +604,8 @@ contract Mashida is
     address spender,
     uint256 amount
   ) internal virtual {
-    require(owner != address(0), "MSI: approve from the zero address");
-    require(spender != address(0), "MSI: approve to the zero address");
+    require(owner != address(0), "MSHD: approve from the zero address");
+    require(spender != address(0), "MSHD: approve to the zero address");
 
     _allowances[owner][spender] = amount;
     emit Approval(owner, spender, amount);
