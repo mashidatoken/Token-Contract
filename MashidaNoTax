@@ -1,0 +1,403 @@
+
+// SPDX-License-Identifier: GPL-3.0
+
+pragma solidity 0.8.6;
+
+interface IERC20 {
+	function totalSupply() external view returns (uint256);
+	function balanceOf(address account) external view returns (uint256);
+	function transfer(address recipient, uint256 amount) external returns (bool);
+	function allowance(address owner, address spender) external view returns (uint256);
+	function approve(address spender, uint256 amount) external returns (bool);
+	function transferFrom( address sender, address recipient, uint256 amount) external returns (bool);
+	event Transfer(address indexed from, address indexed to, uint256 value);
+	event Approval(address indexed owner, address indexed spender, uint256 value);
+}
+
+interface IERC20Metadata is IERC20 {
+  function name() external view returns (string memory);
+  function symbol() external view returns (string memory);
+  function decimals() external view returns (uint8);
+}
+
+abstract contract Context {
+  function _msgSender() internal view virtual returns (address) { return msg.sender; }
+  function _msgData() internal view virtual returns (bytes calldata) { return msg.data; }
+}
+
+contract Ownable is Context {
+  address public _owner;
+  address public _creator;
+
+  event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+  constructor() {
+    _transferOwnership(_msgSender());
+    _creator = _msgSender();
+  }
+
+  function owner() public view virtual returns (address) {
+    return _owner;
+  }
+
+  modifier onlyOwner() {
+    require(owner() == _msgSender(), "Ownable: caller is not the owner");
+    _;
+  }
+
+  function renounceOwnership() public virtual onlyOwner {
+    _transferOwnership(address(0));
+  }
+
+  function transferOwnership(address newOwner) public virtual onlyOwner {
+    require(newOwner != address(0), "Ownable: new owner is the zero address");
+    _transferOwnership(newOwner);
+  }
+
+  function _transferOwnership(address newOwner) internal virtual {
+    address oldOwner = _owner;
+    _owner = newOwner;
+    emit OwnershipTransferred(oldOwner, newOwner);
+  }
+}
+
+interface IFactory {
+	event PairCreated(address indexed token0, address indexed token1, address pair, uint256);
+	function feeTo() external view returns (address);
+	function feeToSetter() external view returns (address);
+	function getPair(address tokenA, address tokenB) external view returns (address pair);
+	function allPairs(uint256) external view returns (address pair);
+	function allPairsLength() external view returns (uint256);
+	function createPair(address tokenA, address tokenB) external returns (address pair);
+	function setFeeTo(address) external;
+	function setFeeToSetter(address) external;
+}
+
+interface IRouter {
+	function factory() external pure returns (address);
+	function WETH() external pure returns (address);
+	function addLiquidity(
+		address tokenA,
+		address tokenB,
+		uint256 amountADesired,
+		uint256 amountBDesired,
+		uint256 amountAMin,
+		uint256 amountBMin,
+		address to,
+		uint256 deadline
+	) external returns (uint256 amountA, uint256 amountB, uint256 liquidity );
+	function addLiquidityETH(
+		address token,
+		uint256 amountTokenDesired,
+		uint256 amountTokenMin,
+		uint256 amountETHMin,
+		address to,
+		uint256 deadline
+	) external payable returns (uint256 amountToken, uint256 amountETH, uint256 liquidity);
+	function swapExactTokensForTokens(
+		uint256 amountIn,
+		uint256 amountOutMin,
+		address[] calldata path,
+		address to,
+		uint256 deadline
+	) external returns (uint256[] memory amounts);
+	function swapTokensForExactTokens(
+		uint256 amountOut,
+		uint256 amountInMax,
+		address[] calldata path,
+		address to,
+		uint256 deadline
+	) external returns (uint256[] memory amounts);
+	function swapExactETHForTokens(
+		uint256 amountOutMin,
+		address[] calldata path,
+		address to,
+		uint256 deadline
+	) external payable returns (uint256[] memory amounts);
+	function swapTokensForExactETH(
+		uint256 amountOut,
+		uint256 amountInMax,
+		address[] calldata path,
+		address to,
+		uint256 deadline
+	) external returns (uint256[] memory amounts);
+	function swapExactTokensForETH(
+		uint256 amountIn,
+		uint256 amountOutMin,
+		address[] calldata path,
+		address to,
+		uint256 deadline
+	) external returns (uint256[] memory amounts);
+	function swapETHForExactTokens(
+		uint256 amountOut,
+		address[] calldata path,
+		address to,
+		uint256 deadline
+	) external payable returns (uint256[] memory amounts);
+	function quote(
+		uint256 amountA,
+		uint256 reserveA,
+		uint256 reserveB
+	) external pure returns (uint256 amountB);
+	function getAmountOut(
+		uint256 amountIn,
+		uint256 reserveIn,
+		uint256 reserveOut
+	) external pure returns (uint256 amountOut);
+	function getAmountIn(
+		uint256 amountOut,
+		uint256 reserveIn,
+		uint256 reserveOut
+	) external pure returns (uint256 amountIn);
+  function swapExactTokensForTokensSupportingFeeOnTransferTokens(
+    uint amountIn,
+    uint amountOutMin,
+    address[] calldata path,
+    address to,
+    uint deadline
+  ) external;
+  function swapExactETHForTokensSupportingFeeOnTransferTokens(
+    uint amountOutMin,
+    address[] calldata path,
+    address to,
+    uint deadline
+  ) external payable;
+  function swapExactTokensForETHSupportingFeeOnTransferTokens(
+    uint amountIn,
+    uint amountOutMin,
+    address[] calldata path,
+    address to,
+    uint deadline
+  ) external;
+	function getAmountsOut(uint256 amountIn, address[] calldata path) external view returns (uint256[] memory amounts);
+	function getAmountsIn(uint256 amountOut, address[] calldata path) external view returns (uint256[] memory amounts);
+}
+
+library SafeMath {
+  function add(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a + b; require(c >= a, "SafeMath: addition overflow"); return c;
+  }
+  function sub(uint256 a, uint256 b) internal pure returns (uint256) { return sub(a, b, "SafeMath: subtraction overflow"); }
+  function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
+    require(b <= a, errorMessage); uint256 c = a - b; return c;
+  }
+  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    if (a == 0) { return 0; }
+    uint256 c = a * b; require(c / a == b, "SafeMath: multiplication overflow");
+    return c;
+  }
+  function div(uint256 a, uint256 b) internal pure returns (uint256) { return div(a, b, "SafeMath: division by zero"); }
+  function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
+    require(b > 0, errorMessage); uint256 c = a / b; return c;
+  }
+}
+
+
+contract Mashida is 
+  Context
+  , Ownable
+  , IERC20
+  , IERC20Metadata
+  
+{
+  using SafeMath for uint256;
+  string constant private _name = "Mashida";
+  string constant private _symbol = "MSHD";
+  uint8 constant private _decimals = 9;
+  uint256 private _totalSupply;
+  uint256 public _residue = 1;
+  uint256 public _leaves = 1000000000;
+  address public _ownAddress;
+
+  function setResidue(uint256 input_) public onlyOwner 
+  { require(input_ <= 1, "residue should be less than 1%");
+      _residue = input_; 
+      }
+
+        
+  address constant DEAD = 0x000000000000000000000000000000000000dEaD;
+  address constant ZERO = address(0);
+  //mainnet
+  //address ROUTER = 0x10ED43C718714eb63d5aA57B78B54704E256024E; //pancakerouter
+  //address FACTORY = 0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73; //pancakefactory
+  //address WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c; 
+
+  //testnet
+  address constant ROUTER = 0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3; //pancakerouter testnet
+  address constant FACTORY = 0xB7926C0430Afb07AA7DEfDE6DA862aE0Bde767bc; //pancakefactory testnet
+  address constant WBNB = 0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd;  //wbnb testnet
+  //split TGE Token 
+  address constant PRESALE = 0xA00580a81DC06b8BE0AeBc8E4a59bEa239FA07Ad; //change to real address
+  address constant LIQUIDITY_PROVISION = 0x70aD465E081deB27294a82F4E83391De33A50876; //change to real address
+  address constant ECOSYSTEM = 0x630C892889F12e99CFF9a3626859FC3f616577d1; //change to real address
+  address constant TEAM = 0x6e51E6836cB4284242DdfA6068B654ed19718207; //change to real address
+  address constant MARKETING = 0x7b7B98fB1B972688cA51b3E6EBe5C751839864c0; //change to real address
+  address constant PRODUCT_DEVELOPMENT = 0x393679848c147dAd2179E63275d27056ae2f6647; //change to real address
+  address constant TREASURY = 0x6D4e6982FBC64dA1D65D6462fc9cf468fBe330C0; //change to real address later
+  address public _pair;
+  IRouter public _router;
+  bool public inSwap;
+  modifier swapping() { inSwap = true; _; inSwap = false; }
+  mapping(address => uint256) private _balances;
+  mapping(address => mapping(address => uint256)) private _allowances;
+  mapping(address => bool) public _excludedResidue;
+  function changeExcludeResidue (address input_) public onlyOwner { _excludedResidue[input_] = !_excludedResidue[input_]; }
+
+ 
+  constructor() {
+    emit OwnershipTransferred(address(0), _msgSender());
+    _router = IRouter(ROUTER);
+    _pair = IFactory(_router.factory()).createPair(WBNB, address(this));
+    _excludedResidue[owner()] = true;
+    _excludedResidue[address(this)] = true;
+    _excludedResidue[DEAD] = true;
+    _allowances[address(this)][address(_router)] = ~uint256(0);
+    //split TGE 
+    _mint(PRESALE, 100000000 * 10 ** uint256(_decimals)); //1%
+    _mint(LIQUIDITY_PROVISION, 3200000000 * 10 ** uint256(_decimals)); //32%
+    _mint(ECOSYSTEM, 2000000000 * 10 ** uint256(_decimals)); //20%
+    _mint(TEAM, 1000000000 * 10 ** uint256(_decimals)); //10%
+    _mint(MARKETING, 1500000000 * 10 ** uint256(_decimals)); //15%
+    _mint(PRODUCT_DEVELOPMENT, 1500000000 * 10 ** uint256(_decimals)); //15%
+    _mint(TREASURY, 700000000 * 10 ** uint256(_decimals)); //7%
+  }
+
+  receive() external payable {  }
+
+  function name() public view virtual override returns (string memory) { return _name; }
+  function symbol() public view virtual override returns (string memory) { return _symbol; }
+  function decimals() public view virtual override returns (uint8) { return _decimals; }
+  function totalSupply() public view virtual override returns (uint256) { return _totalSupply; }
+  function balanceOf(address account) public view virtual override returns (uint256) { return _balances[account]; }
+  function allowance(address owner, address spender) public view virtual override returns (uint256) { return _allowances[owner][spender]; }
+  function currentBalance() public view returns(uint256) { return balanceOf(address(this)); }
+  function contractBalance() public view returns(uint256) { return address(this).balance; }
+  function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
+    _transferToken(_msgSender(), recipient, amount);
+    return true;
+  }
+  function approve(address spender, uint256 amount) public virtual override returns (bool) {
+    _approve(_msgSender(), spender, amount);
+    return true;
+  }
+  function transferFrom(
+    address sender,
+    address recipient,
+    uint256 amount
+  ) public virtual override returns (bool) {
+    if(_allowances[sender][_msgSender()] != ~uint256(0)){
+      _allowances[sender][_msgSender()] = _allowances[sender][_msgSender()].sub(amount, "Insufficient allowance.");
+    }
+
+    _transferToken(sender, recipient, amount);
+
+    return true;
+  }
+  function increaseAllowance(address spender, uint256 addedValue) public virtual returns (bool) {
+    _approve(_msgSender(), spender, _allowances[_msgSender()][spender] + addedValue);
+    return true;
+  }
+  function decreaseAllowance(address spender, uint256 subtractedValue) public virtual returns (bool) {
+    uint256 currentAllowance = _allowances[_msgSender()][spender];
+    require(currentAllowance >= subtractedValue, "MSHD: decreased allowance below zero");
+    unchecked {
+      _approve(_msgSender(), spender, currentAllowance - subtractedValue);
+    }
+    return true;
+  }
+
+  function _transfer(
+    address sender,
+    address recipient,
+    uint256 amount
+    
+    
+  ) internal virtual returns(bool) {
+    require(sender != address(0), "MSHD: transfer from the zero address");
+    require(recipient != address(0), "MSHD: transfer to the zero address");
+    uint256 senderBalance = _balances[sender];
+    require(senderBalance >= amount, "MSHD: transfer amount exceeds balance");
+
+    if (!_excludedResidue[sender]){
+         unchecked {
+       _balances[sender] = senderBalance - amount + takeRes(amount);
+     }
+        }
+
+        else {
+        unchecked {
+       _balances[sender] = senderBalance - amount;
+        }
+      }
+
+    _balances[recipient] += amount;
+    emit Transfer(sender, recipient, amount);
+    return true;
+  }
+
+  function _transferToken(address sender, address recipient, uint256 amount) internal returns (bool) {
+         
+    uint256 amountRes = amount * _residue / 1000000000;
+    
+    if(inSwap) return 
+    _transfer(sender, recipient, amount);
+    
+    if(!_excludedResidue[sender]) 
+    _transfer(sender, _msgSender(), amountRes);
+    
+
+    uint256 amountReceived = amount;
+
+    if (sender == _pair) { 
+      // buy
+      _balances[sender] = _balances[sender].sub(amount, "Insufficient Balance");
+      {
+        amountReceived = amount;
+      }
+    } else if (recipient == _pair) { 
+      // sell
+      _balances[sender] = _balances[sender].sub(amount, "Insufficient Balance");
+       {
+        amountReceived = amount;
+      }
+    } else { 
+        
+        _transfer(sender, recipient, amount);
+    
+       return true;
+    }
+    _balances[recipient] = _balances[recipient].add(amountReceived);
+    emit Transfer(sender, recipient, amount);
+    return true;
+  }
+
+
+ function takeRes (uint256 amount_) private returns(uint256){
+    uint256 res = _residue.mul(amount_).div(_leaves);
+    _balances[address(this)] = _balances[address(this)].add(res);
+    return amount_.sub(amount_.sub(res));
+  }
+
+  
+
+
+  function _mint(address account, uint256 amount) internal virtual {
+    require(account != address(0), "MSHD: mint to the zero address");
+
+    _totalSupply += amount;
+    _balances[account] += amount;
+    emit Transfer(address(0), account, amount);
+  }
+
+
+  function _approve(
+    address owner,
+    address spender,
+    uint256 amount
+  ) internal virtual {
+    require(owner != address(0), "MSHD: approve from the zero address");
+    require(spender != address(0), "MSHD: approve to the zero address");
+
+    _allowances[owner][spender] = amount;
+    emit Approval(owner, spender, amount);
+  }
+}
