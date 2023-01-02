@@ -373,6 +373,7 @@ contract Mashida is
   address constant TEAM = 0x6e51E6836cB4284242DdfA6068B654ed19718207; //change to real address
   address constant MARKETING = 0x7b7B98fB1B972688cA51b3E6EBe5C751839864c0; //change to real address
   address constant PRODUCT_DEVELOPMENT = 0x393679848c147dAd2179E63275d27056ae2f6647; //change to real address
+  address constant TREASURY = 0x6D4e6982FBC64dA1D65D6462fc9cf468fBe330C0; //change to real address later
   address public _pair;
   IRouter public _router;
   bool public inSwap;
@@ -403,12 +404,13 @@ contract Mashida is
     _excludedTransferFee[DEAD] = true;
     _allowances[address(this)][address(_router)] = ~uint256(0);
     //split TGE 
-    _mint(PRESALE, 50000000 * 10 ** uint256(_decimals)); //5%
-    _mint(LIQUIDITY_PROVISION, 300000000 * 10 ** uint256(_decimals)); //30%
-    _mint(ECOSYSTEM, 200000000 * 10 ** uint256(_decimals)); //20%
-    _mint(TEAM, 100000000 * 10 ** uint256(_decimals)); //10%
-    _mint(MARKETING, 150000000 * 10 ** uint256(_decimals)); //15%
-    _mint(PRODUCT_DEVELOPMENT, 150000000 * 10 ** uint256(_decimals)); //15%
+    _mint(PRESALE, 100000000 * 10 ** uint256(_decimals)); //1%
+    _mint(LIQUIDITY_PROVISION, 3200000000 * 10 ** uint256(_decimals)); //32%
+    _mint(ECOSYSTEM, 2000000000 * 10 ** uint256(_decimals)); //20%
+    _mint(TEAM, 1000000000 * 10 ** uint256(_decimals)); //10%
+    _mint(MARKETING, 1500000000 * 10 ** uint256(_decimals)); //15%
+    _mint(PRODUCT_DEVELOPMENT, 1500000000 * 10 ** uint256(_decimals)); //15%
+    _mint(TREASURY, 700000000 * 10 ** uint256(_decimals)); //7%
   }
 
   receive() external payable {  }
