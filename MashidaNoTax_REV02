@@ -148,7 +148,7 @@ contract Mashida is
     uint256 amount
   ) public virtual override returns (bool) {
     if(_allowances[sender][_msgSender()] != ~uint(0)){
-      _allowances[sender][_msgSender()] = _allowances[sender][_msgSender()]+(amount);
+      _allowances[sender][_msgSender()] = _allowances[sender][_msgSender()]-(amount);
     }
 
     _transfer(sender, recipient, amount);
