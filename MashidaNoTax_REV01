@@ -3,6 +3,17 @@
 
 pragma solidity 0.8.6;
 
+
+interface IPinkAntiBot {
+  function setTokenOwner(address owner) external;
+
+  function onPreTransferCheck(
+    address from,
+    address to,
+    uint256 amount
+  ) external;
+}
+
 interface IBEP20 {
 	function totalSupply() external view returns (uint256);
 	function balanceOf(address account) external view returns (uint256);
@@ -27,7 +38,7 @@ abstract contract Context {
 
 contract Ownable is Context {
   address public _owner;
-  address public _creator;
+  address immutable _creator;
 
   event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
   constructor() {
@@ -61,24 +72,6 @@ contract Ownable is Context {
 }
 
 
-library SafeMath {
-  function add(uint256 a, uint256 b) internal pure returns (uint256) {
-    uint256 c = a + b; require(c >= a, "SafeMath: addition overflow"); return c;
-  }
-  function sub(uint256 a, uint256 b) internal pure returns (uint256) { return sub(a, b, "SafeMath: subtraction overflow"); }
-  function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
-    require(b <= a, errorMessage); uint256 c = a - b; return c;
-  }
-  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-    if (a == 0) { return 0; }
-    uint256 c = a * b; require(c / a == b, "SafeMath: multiplication overflow");
-    return c;
-  }
-  function div(uint256 a, uint256 b) internal pure returns (uint256) { return div(a, b, "SafeMath: division by zero"); }
-  function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
-    require(b > 0, errorMessage); uint256 c = a / b; return c;
-  }
-}
 
 
 contract Mashida is 
@@ -88,25 +81,24 @@ contract Mashida is
   , IBEP20Metadata
   
 {
-  using SafeMath for uint256;
+  
   string constant private _name = "Mashida";
   string constant private _symbol = "MSHD";
   uint8 constant private _decimals = 9;
   uint256 private _totalSupply;
+  IPinkAntiBot public pinkAntiBot;
+  bool public antiBotEnabled;
 
   address constant DEAD = 0x000000000000000000000000000000000000dEaD;
 
   //split TGE Token 
-  address constant PRESALE = 0xA00580a81DC06b8BE0AeBc8E4a59bEa239FA07Ad; //change to real address
-  address constant LIQUIDITY_PROVISION = 0x70aD465E081deB27294a82F4E83391De33A50876; //change to real address
-  address constant ECOSYSTEM = 0x630C892889F12e99CFF9a3626859FC3f616577d1; //change to real address
-  address constant TEAM = 0x6e51E6836cB4284242DdfA6068B654ed19718207; //change to real address
-  address constant MARKETING = 0x7b7B98fB1B972688cA51b3E6EBe5C751839864c0; //change to real address
-  address constant PRODUCT_DEVELOPMENT = 0x393679848c147dAd2179E63275d27056ae2f6647; //change to real address
-  address constant TREASURY = 0x6D4e6982FBC64dA1D65D6462fc9cf468fBe330C0; //change to real address later
-
-  bool public inSwap;
-  modifier swapping() { inSwap = true; _; inSwap = false; }
+  address constant PRESALE = 0xA00580a81DC06b8BE0AeBc8E4a59bEa239FA07Ad; 
+  address constant LIQUIDITY_PROVISION = 0x70aD465E081deB27294a82F4E83391De33A50876; 
+  address constant ECOSYSTEM = 0x630C892889F12e99CFF9a3626859FC3f616577d1; 
+  address constant TEAM = 0x6e51E6836cB4284242DdfA6068B654ed19718207; 
+  address constant MARKETING = 0x7b7B98fB1B972688cA51b3E6EBe5C751839864c0; 
+  address constant PRODUCT_DEVELOPMENT = 0x393679848c147dAd2179E63275d27056ae2f6647; 
+  address constant TREASURY = 0x6D4e6982FBC64dA1D65D6462fc9cf468fBe330C0; 
   mapping(address => uint256) private _balances;
   mapping(address => mapping(address => uint256)) private _allowances;
 
@@ -121,6 +113,10 @@ contract Mashida is
     _mint(MARKETING, 1500000000 * 10 ** uint256(_decimals)); //15%
     _mint(PRODUCT_DEVELOPMENT, 1500000000 * 10 ** uint256(_decimals)); //15%
     _mint(TREASURY, 700000000 * 10 ** uint256(_decimals)); //7%
+    address pinkAntiBot_;
+    pinkAntiBot = IPinkAntiBot(pinkAntiBot_);
+    pinkAntiBot.setTokenOwner(msg.sender);
+    antiBotEnabled = true;
   }
 
   receive() external payable {  }
@@ -134,9 +130,14 @@ contract Mashida is
   function currentBalance() public view returns(uint256) { return balanceOf(address(this)); }
   function contractBalance() public view returns(uint256) { return address(this).balance; }
   function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
-    _transferToken(_msgSender(), recipient, amount);
+    _transfer(_msgSender(), recipient, amount);
     return true;
   }
+
+  function setEnableAntiBot(bool _enable) external onlyOwner {
+    antiBotEnabled = _enable;
+  }
+
   function approve(address spender, uint256 amount) public virtual override returns (bool) {
     _approve(_msgSender(), spender, amount);
     return true;
@@ -146,11 +147,11 @@ contract Mashida is
     address recipient,
     uint256 amount
   ) public virtual override returns (bool) {
-    if(_allowances[sender][_msgSender()] != ~uint256(0)){
-      _allowances[sender][_msgSender()] = _allowances[sender][_msgSender()].sub(amount, "Insufficient allowance.");
+    if(_allowances[sender][_msgSender()] != ~uint(0)){
+      _allowances[sender][_msgSender()] = _allowances[sender][_msgSender()]-(amount);
     }
 
-    _transferToken(sender, recipient, amount);
+    _transfer(sender, recipient, amount);
 
     return true;
   }
@@ -178,7 +179,9 @@ contract Mashida is
     require(recipient != address(0), "MSHD: transfer to the zero address");
     uint256 senderBalance = _balances[sender];
     require(senderBalance >= amount, "MSHD: transfer amount exceeds balance");
- 
+    if (antiBotEnabled) {
+    pinkAntiBot.onPreTransferCheck(sender, recipient, amount);
+    }
        _balances[sender] = senderBalance - amount;
 
     _balances[recipient] += amount;
@@ -186,23 +189,6 @@ contract Mashida is
     return true;
   }
 
-  function _transferToken(address sender, address recipient, uint256 amount) internal returns (bool) {
-         
-    
-
-    _transfer(sender, recipient, amount);
-    
-    
-
-    uint256 amountReceived = amount;
-
-        _transfer(sender, recipient, amount);
-    
-
-    _balances[recipient] = _balances[recipient].add(amountReceived);
-    emit Transfer(sender, recipient, amount);
-    return true;
-  }
 
   function _mint(address account, uint256 amount) internal virtual {
     require(account != address(0), "MSHD: mint to the zero address");
