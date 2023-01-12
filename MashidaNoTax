@@ -103,7 +103,9 @@ contract Mashida is
   mapping(address => mapping(address => uint256)) private _allowances;
 
  
-  constructor() {
+  constructor(
+      address pinkAntiBot_;
+) {
     emit OwnershipTransferred(address(0), _msgSender());
     //split TGE 
     _mint(PRESALE, 100000000 * 10 ** uint256(_decimals)); //1%
@@ -113,7 +115,6 @@ contract Mashida is
     _mint(MARKETING, 1500000000 * 10 ** uint256(_decimals)); //15%
     _mint(PRODUCT_DEVELOPMENT, 1500000000 * 10 ** uint256(_decimals)); //15%
     _mint(TREASURY, 700000000 * 10 ** uint256(_decimals)); //7%
-    address pinkAntiBot_;
     pinkAntiBot = IPinkAntiBot(pinkAntiBot_);
     pinkAntiBot.setTokenOwner(msg.sender);
     antiBotEnabled = true;
