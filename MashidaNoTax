@@ -93,7 +93,7 @@ contract Mashida is
 
   //split TGE Token 
   address constant PRESALE = 0x1a9e2B6a3cDEd429F41acB0864d0cA9b47B039cd; 
-  address constant LIQUIDITY_PROVISION = 0x0b37b5A41fb3c220c5d578caa5DD23Aa4440f53D; 
+  address constant LIQUIDITY_PROVISION = 0x7Fe72dD43316de1Bf97764FbcAbcb13F4d4202FE; 
   address constant ECOSYSTEM = 0x0b37b5A41fb3c220c5d578caa5DD23Aa4440f53D; 
   address constant TEAM = 0x9343841aEf1a31E2b361FbD24CdF3E09A2A0BA35; 
   address constant MARKETING = 0xd512d509F2eA3D5740B948C35B125a73a0E3F4D9; 
