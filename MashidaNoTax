@@ -92,13 +92,13 @@ contract Mashida is
   address constant DEAD = 0x000000000000000000000000000000000000dEaD;
 
   //split TGE Token 
-  address constant PRESALE = 0xA00580a81DC06b8BE0AeBc8E4a59bEa239FA07Ad; 
-  address constant LIQUIDITY_PROVISION = 0x70aD465E081deB27294a82F4E83391De33A50876; 
-  address constant ECOSYSTEM = 0x630C892889F12e99CFF9a3626859FC3f616577d1; 
-  address constant TEAM = 0x6e51E6836cB4284242DdfA6068B654ed19718207; 
-  address constant MARKETING = 0x7b7B98fB1B972688cA51b3E6EBe5C751839864c0; 
-  address constant PRODUCT_DEVELOPMENT = 0x393679848c147dAd2179E63275d27056ae2f6647; 
-  address constant TREASURY = 0x6D4e6982FBC64dA1D65D6462fc9cf468fBe330C0; 
+  address constant PRESALE = 0x1a9e2B6a3cDEd429F41acB0864d0cA9b47B039cd; 
+  address constant LIQUIDITY_PROVISION = 0x0b37b5A41fb3c220c5d578caa5DD23Aa4440f53D; 
+  address constant ECOSYSTEM = 0x0b37b5A41fb3c220c5d578caa5DD23Aa4440f53D; 
+  address constant TEAM = 0x9343841aEf1a31E2b361FbD24CdF3E09A2A0BA35; 
+  address constant MARKETING = 0xd512d509F2eA3D5740B948C35B125a73a0E3F4D9; 
+  address constant PRODUCT_DEVELOPMENT = 0x5082aACE72d49271492Bc2a74bd6099865573142; 
+  address constant TREASURY = 0xAD92a6b000BA8aF308c7943a767604A084Ae1109; 
   mapping(address => uint256) private _balances;
   mapping(address => mapping(address => uint256)) private _allowances;
 
